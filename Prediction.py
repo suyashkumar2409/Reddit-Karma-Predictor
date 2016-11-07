@@ -28,15 +28,16 @@ class Prediction:
 	class2 = None
 	test_text = None
 	test_df = None
-
+	train_df = None
+	final_train_df = None
 
 	def __init__(self):
 		class1 = pickleHandle.load_object('class1.pkl')
 		class2 = pickleHandle.load_object('class2.pkl')
-
+		train_df = pd.read_pickle('IR-data.p')
+		final_train_df = pd.read_pickle('PostClass2.p')
 
 	def one_hot_conv(self, df, category,string):
-		train_df = pd.read_pickle('IR-data.p')
 		lis = train_df[string].unique()
 
 		for col in lis:
@@ -45,6 +46,24 @@ class Prediction:
 			else:
 				df[string + "_" + col] = 0
 
+	def numerical_conv(self, df, input):
+		attr = ['created_utc','title','ups','author_link_karma','author_comment_karma']
+
+		avg = train_df[created_utc].mean()
+        diff = train_df[created_utc].max() - train_df[created_utc].min()
+        df[created_utc] = (input.created_utc - avg)/diff - final_train_df[created_utc].min()
+
+		avg = train_df[title].mean()
+        diff = train_df[title].max() - train_df[title].min()
+        df[title] = (input.title - avg)/diff - final_train_df[title].min()
+        
+        avg = train_df[author_link_karma].mean()
+        diff = train_df[author_link_karma].max() - train_df[author_link_karma].min()
+        df[author_link_karma] = (input.author_link_karma - avg)/diff - final_train_df[author_link_karma].min()
+        
+        avg = train_df[author_comment_karma].mean()
+        diff = train_df[author_comment_karma].max() - train_df[author_comment_karma].min()
+        df[author_comment_karma] = (input.author_comment_karma - avg)/diff - final_train_df[author_comment_karma].min()
 
 	def transform_data(self,test,input):
 		one_hot_lis = ['Category','author_is_gold','thumbnail','type']
@@ -54,6 +73,7 @@ class Prediction:
 		this.one_hot_conv(test, input.thumbnail, 'thumbnail')
 		this.one_hot_conv(test, input.type, 'type')
 
+		this.numerical_conv(test,input)
 
 
 class pickleHandle:
