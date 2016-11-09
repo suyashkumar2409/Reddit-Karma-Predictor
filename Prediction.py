@@ -90,7 +90,9 @@ class Prediction:
 		temp = str(textHandle.removenonsensewords(temp))
 		bla = str(textHandle.removebadwords(temp,textHandle.listofbadwords()))
 		temp = str(textHandle.replacewithstem(temp))
-		#print(temp)
+		if temp is "":
+			temp = "hello android"
+		print(temp +"uoffsdoiffdifh8icn!!!!!!!!!!!!!!!!!!!")
 		self.text_train = self.hashingVect.transform(temp)
 
 
@@ -262,4 +264,3 @@ def main():
 	pred.transform_data(inputc)
 	print(int(round(pred.finalPrediction()[0])))
 
-main()

@@ -1,0 +1,5 @@
+1. To run the application, type python GUI.py on a terminal
+2. Enter desired values in the respective fields
+3. The text field would have an effect only when it has some legible words
+4. All numerical fields must be non-zero
+5. Click on predict popularity to get predicted number of upvotes 
