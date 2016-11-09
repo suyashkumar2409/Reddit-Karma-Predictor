@@ -65,6 +65,15 @@ class Prediction:
         diff = train_df[author_comment_karma].max() - train_df[author_comment_karma].min()
         df[author_comment_karma] = (input.author_comment_karma - avg)/diff - final_train_df[author_comment_karma].min()
 
+    def string_conv(self, df, input):
+    	df['title_clean'] = textHandle.cleanstring(input.title)
+    	df['title_nonsense'] = textHandle.removenonsensewords(df['title_clean'])
+    	df['title_badwords'] = textHandle.removebadwords(df['title_nonsense'], textHandle.listofbadwords())
+
+    	df['title_stemmed'] = textHandle.replacewithstem(df['title_badwords'])
+
+
+
 	def transform_data(self,test,input):
 		one_hot_lis = ['Category','author_is_gold','thumbnail','type']
 
@@ -127,3 +136,46 @@ class textHandle:
 	    x=removedigits(x)
 	    x=lowercasestring(x)
 	    return x 
+
+	def removenonsensewords(text):
+		d = enchant.Dict("en_US")
+	    tokens = nltk.word_tokenize(text)
+	    stemmed = []
+	    for token in tokens:
+
+	        #print(i)
+
+	        #i=i+1
+
+	        if d.check(token):
+
+	            stemmed.append(token)
+
+	        
+
+	    return ' '.join(stemmed)
+
+	def listofbadwords():
+	    from nltk.corpus import stopwords
+	    stopwords = stopwords.words('english')
+	    monthnames = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec']
+	    randomrepetitive = ['edu','unl','mt']
+	    
+	    totlist = stopwords + monthnames + randomrepetitive
+	    return totlist
+	def removebadwords(x,totlist):
+    
+	    wordlist = x.split()
+	    wordlist = [word for word in wordlist if word.lower() not in totlist]
+	    x = ' '.join(wordlist)
+	    return x
+
+	def replacewithstem(text):
+	    tokens = nltk.word_tokenize(text)
+	    stemmer = nltk.stem.porter.PorterStemmer()
+	    
+	    stemmed = []
+	    for token in tokens:
+	        stemmed.append(stemmer.stem(token))
+	        
+	    return ' '.join(stemmed)
