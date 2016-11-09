@@ -42,7 +42,8 @@ class Prediction:
 		self.train_df = pd.read_pickle('IR-data.p')
 		self.final_train_df = pd.read_pickle('PostClass2.p')
 		self.hashingVect = pickleHandle.load_object('hashingVect.pkl')
-		self.test_df = pd.DataFrame()
+		self.final_train_df = pd.read_pickle('PostClass2.p')
+		self.test_df = self.final_train_df.loc[0,:].copy(deep = True)
 		self.ups_factor = 38331
 		self.partial_clean = pd.read_pickle('CleanedData_2.p')
 
@@ -52,7 +53,7 @@ class Prediction:
 		lis = self.partial_clean[string].unique()
 		if string == 'thumbnail':
 			np.append(lis,"link")
-			print(lis)
+			#print(lis)
 		
 		if string == 'type':
 			np.append(lis,"txt")
@@ -89,6 +90,7 @@ class Prediction:
 		temp = str(textHandle.removenonsensewords(temp))
 		bla = str(textHandle.removebadwords(temp,textHandle.listofbadwords()))
 		temp = str(textHandle.replacewithstem(temp))
+		#print(temp)
 		self.text_train = self.hashingVect.transform(temp)
 
 
@@ -107,7 +109,10 @@ class Prediction:
 		self.test_df['predicted_ups'] = self.textPrediction()
 
 	def textPrediction(self):
-		return self.class1.predict(self.text_train)
+		#print(self.text_train.shape)
+		#print(self.class1.predict(self.text_train))
+
+		return self.class1.predict(self.text_train)[0]
 
 	def finalPrediction(self):
 		self.final_attr = [ u'thumbnail_default',        u'thumbnail_link',
@@ -242,19 +247,19 @@ class textHandle:
 
 def main():
 	inputc = InputClass()
-	inputc.category = 'Android'
-	inputc.author_comment_karma = 50000
-	inputc.author_link_karma = 34000
-	inputc.created_utc = 1000000000
-	inputc.num_comments = 20
+	inputc.category = 'AskReddit'
+	inputc.author_comment_karma = 270316.0
+	inputc.author_link_karma = 11657.0
+	inputc.created_utc = 100000000
+	inputc.num_comments =  	7769
 	inputc.thumbnail = 'link'
-	inputc.type_var = 'nsfw'
+	inputc.type_var = 'txt'
 	inputc.author_is_gold = True
-	inputc.title = "This post is about an awesome Android application that is going to take over the world"
+	inputc.title = "What tasty food would be distusting if eaten over rice?"
 
 
 	pred = Prediction()
 	pred.transform_data(inputc)
-	print(pred.finalPrediction())
+	print(int(round(pred.finalPrediction()[0])))
 
 main()
