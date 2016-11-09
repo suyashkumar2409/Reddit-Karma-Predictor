@@ -34,6 +34,7 @@ class Prediction:
 	text_train = None
 	final_attr = None
 	ups_factor = None
+	partial_clean = None
 
 	def __init__(self):
 		self.class1 = pickleHandle.load_object('class1.pkl')
@@ -43,11 +44,20 @@ class Prediction:
 		self.hashingVect = pickleHandle.load_object('hashingVect.pkl')
 		self.test_df = pd.DataFrame()
 		self.ups_factor = 38331
+		self.partial_clean = pd.read_pickle('CleanedData_2.p')
 
 
 	def one_hot_conv(self, category,string):
 		#print(self.train_df)
-		lis = self.train_df[string].unique()
+		lis = self.partial_clean[string].unique()
+		if string == 'thumbnail':
+			np.append(lis,"link")
+			print(lis)
+		
+		if string == 'type':
+			np.append(lis,"txt")
+
+
 
 		for col in lis:
 			if col == category:
@@ -56,7 +66,7 @@ class Prediction:
 				self.test_df[string + "_" + str(col)] = 0
 
 	def numerical_conv(self, inputc):
-		attr = ['created_utc','author_link_karma','author_comment_karma']
+		attr = ['created_utc','author_link_karma','author_comment_karma', 'num_comments']
 
 		avg = self.train_df["created_utc"].mean()
 		diff = self.train_df["created_utc"].max() - self.train_df["created_utc"].min()
@@ -70,12 +80,16 @@ class Prediction:
 		diff = self.train_df["author_comment_karma"].max() - self.train_df["author_comment_karma"].min()
 		self.test_df["author_comment_karma"] = (inputc.author_comment_karma - avg)/diff - self.final_train_df["author_comment_karma"].min()
 
+		avg = self.train_df["num_comments"].mean()
+		diff = self.train_df["num_comments"].max() - self.train_df["num_comments"].min()
+		self.test_df["num_comments"] = (inputc.num_comments - avg)/diff - self.final_train_df["num_comments"].min()
+
 	def string_conv(self, inputc):	
-		self.test_df['title_clean'] = str(textHandle.cleanstring(inputc.title))
-		self.test_df['title_nonsense'] = str(textHandle.removenonsensewords(self.test_df['title_clean']))
-		self.test_df['title_badwords'] = str(textHandle.removebadwords(self.test_df['title_nonsense'], textHandle.listofbadwords()))
-		self.test_df['title_stemmed'] = str(textHandle.replacewithstem(self.test_df['title_badwords']))
-		self.text_train = self.hashingVect.transform(self.test_df['title_stemmed'])
+		temp = str(textHandle.cleanstring(inputc.title))
+		temp = str(textHandle.removenonsensewords(temp))
+		bla = str(textHandle.removebadwords(temp,textHandle.listofbadwords()))
+		temp = str(textHandle.replacewithstem(temp))
+		self.text_train = self.hashingVect.transform(temp)
 
 
 
@@ -90,7 +104,7 @@ class Prediction:
 		self.numerical_conv(inputc)
 		self.string_conv(inputc)
 
-		self.test_df['predicted_ups'] = textPrediction()
+		self.test_df['predicted_ups'] = self.textPrediction()
 
 	def textPrediction(self):
 		return self.class1.predict(self.text_train)
@@ -124,8 +138,9 @@ class Prediction:
                  u'created_utc',          u'num_comments',
                u'predicted_ups']
 
-		return self.class2.predict(self.test_df[final_attr]) * self.ups_factor
-
+		#print(self.class2.predict(self.test_df[self.final_attr]))
+		print(self.test_df[self.final_attr])
+		return self.class2.predict(self.test_df[self.final_attr]) * self.ups_factor
 
 class pickleHandle:
 	@staticmethod
@@ -235,11 +250,11 @@ def main():
 	inputc.thumbnail = 'link'
 	inputc.type_var = 'nsfw'
 	inputc.author_is_gold = True
-	inputc.title = 'This post is about an awesome Android application that is going to take over the world'
+	inputc.title = "This post is about an awesome Android application that is going to take over the world"
 
 
 	pred = Prediction()
 	pred.transform_data(inputc)
-	print(pred.finalPrediction)
+	print(pred.finalPrediction())
 
 main()
