@@ -7,7 +7,7 @@ import re
 import nltk
 import enchant
 import sklearn
-
+import pickle
 
 
 class InputClass:
@@ -36,47 +36,45 @@ class Prediction:
 	ups_factor = None
 
 	def __init__(self):
-		class1 = pickleHandle.load_object('class1.pkl')
-		class2 = pickleHandle.load_object('class2.pkl')
-		train_df = pd.read_pickle('IR-data.p')
-		final_train_df = pd.read_pickle('PostClass2.p')
-		hashingVect = pickleHandle.load_object('hashingVect.pkl')
-		test_df = pd.DataFrame()
-		ups_factor = 38331
+		self.class1 = pickleHandle.load_object('class1.pkl')
+		self.class2 = pickleHandle.load_object('class2.pkl')
+		self.train_df = pd.read_pickle('IR-data.p')
+		self.final_train_df = pd.read_pickle('PostClass2.p')
+		self.hashingVect = pickleHandle.load_object('hashingVect.pkl')
+		self.test_df = pd.DataFrame()
+		self.ups_factor = 38331
 
 
 	def one_hot_conv(self, category,string):
-		lis = train_df[string].unique()
+		#print(self.train_df)
+		lis = self.train_df[string].unique()
 
 		for col in lis:
 			if col == category:
-				self.test_df[string + "_" + col] = 1
+				self.test_df[string + "_" + str(col)] = 1
 			else:
-				self.test_df[string + "_" + col] = 0
+				self.test_df[string + "_" + str(col)] = 0
 
 	def numerical_conv(self, inputc):
-		attr = ['created_utc','title','ups','author_link_karma','author_comment_karma']
+		attr = ['created_utc','author_link_karma','author_comment_karma']
 
-		avg = train_df[created_utc].mean()
-		diff = train_df[created_utc].max() - train_df[created_utc].min()
-		self.test_df[created_utc] = (inputc.created_utc - avg)/diff - final_train_df[created_utc].min()
-		avg = train_df[title].mean()
-		diff = train_df[title].max() - train_df[title].min()
-		self.test_df[title] = (inputc.title - avg)/diff - final_train_df[title].min()
+		avg = self.train_df["created_utc"].mean()
+		diff = self.train_df["created_utc"].max() - self.train_df["created_utc"].min()
+		self.test_df["created_utc"] = (inputc.created_utc - avg)/diff - self.final_train_df["created_utc"].min()
+		
+		avg = self.train_df["author_link_karma"].mean()
+		diff = self.train_df["author_link_karma"].max() - self.train_df["author_link_karma"].min()
+		self.test_df["author_link_karma"] = (inputc.author_link_karma - avg)/diff - self.final_train_df["author_link_karma"].min()
         
-		avg = train_df[author_link_karma].mean()
-		diff = train_df[author_link_karma].max() - train_df[author_link_karma].min()
-		self.test_df[author_link_karma] = (inputc.author_link_karma - avg)/diff - final_train_df[author_link_karma].min()
-        
-		avg = train_df[author_comment_karma].mean()
-		diff = train_df[author_comment_karma].max() - train_df[author_comment_karma].min()
-		self.test_df[author_comment_karma] = (inputc.author_comment_karma - avg)/diff - final_train_df[author_comment_karma].min()
+		avg = self.train_df["author_comment_karma"].mean()
+		diff = self.train_df["author_comment_karma"].max() - self.train_df["author_comment_karma"].min()
+		self.test_df["author_comment_karma"] = (inputc.author_comment_karma - avg)/diff - self.final_train_df["author_comment_karma"].min()
 
 	def string_conv(self, inputc):	
-		self.test_df['title_clean'] = textHandle.cleanstring(inputc.title)
-		self.test_df['title_nonsense'] = textHandle.removenonsensewords(self.test_df['title_clean'])
-		self.test_df['title_badwords'] = textHandle.removebadwords(self.test_df['title_nonsense'], textHandle.listofbadwords())
-		self.test_df['title_stemmed'] = textHandle.replacewithstem(self.test_df['title_badwords'])
+		self.test_df['title_clean'] = str(textHandle.cleanstring(inputc.title))
+		self.test_df['title_nonsense'] = str(textHandle.removenonsensewords(self.test_df['title_clean']))
+		self.test_df['title_badwords'] = str(textHandle.removebadwords(self.test_df['title_nonsense'], textHandle.listofbadwords()))
+		self.test_df['title_stemmed'] = str(textHandle.replacewithstem(self.test_df['title_badwords']))
 		self.text_train = self.hashingVect.transform(self.test_df['title_stemmed'])
 
 
@@ -130,10 +128,12 @@ class Prediction:
 
 
 class pickleHandle:
+	@staticmethod
 	def save_object(obj, filename):
 	    with open(filename, 'wb') as output:
 	        pickle.dump(obj, output, pickle.HIGHEST_PROTOCOL)
 
+	@staticmethod
 	def load_object(filename):
 	    pkl_file = open(filename, 'rb')
 	    mydict2 = pickle.load(pkl_file)
@@ -141,6 +141,7 @@ class pickleHandle:
 	    return mydict2
 
 class textHandle:
+	@staticmethod
 	def removepunctuation(x):
 	    x = x.replace('.','')
 	    x = x.replace(')','')
@@ -163,24 +164,29 @@ class textHandle:
 	    #retstr = x.translate(string.maketrans("",""), string.punctuation)
 	    return x
 	    
+	@staticmethod
 	def removeunicode(x):
 	    return re.sub(r'[^\x00-\x7F]+',' ', x)
+	@staticmethod
 	def lowercasestring(x):
 	    return x.lower()
 
+	@staticmethod
 	def removedigits(s):
 	    s = re.sub(" \d+", " ", s)
 	    return s
 	    
+	@staticmethod
 	def cleanstring(x):
 	    #x=replaceredundancy(x)
-	    x=removepunctuation(x)
-	    x=removeunicode(x)
+	    x=textHandle.removepunctuation(x)
+	    x=textHandle.removeunicode(x)
 	    #x = trimstring(x)
-	    x=removedigits(x)
-	    x=lowercasestring(x)
+	    x=textHandle.removedigits(x)
+	    x=textHandle.lowercasestring(x)
 	    return x 
 
+	@staticmethod
 	def removenonsensewords(text):
 		d = enchant.Dict("en_US")
 		tokens = nltk.word_tokenize(text)
@@ -191,6 +197,7 @@ class textHandle:
 
 		return ' '.join(stemmed)
 
+	@staticmethod
 	def listofbadwords():
 	    from nltk.corpus import stopwords
 	    stopwords = stopwords.words('english')
@@ -199,6 +206,7 @@ class textHandle:
 	    
 	    totlist = stopwords + monthnames + randomrepetitive
 	    return totlist
+	@staticmethod
 	def removebadwords(x,totlist):
     
 	    wordlist = x.split()
@@ -206,6 +214,7 @@ class textHandle:
 	    x = ' '.join(wordlist)
 	    return x
 
+	@staticmethod
 	def replacewithstem(text):
 	    tokens = nltk.word_tokenize(text)
 	    stemmer = nltk.stem.porter.PorterStemmer()
